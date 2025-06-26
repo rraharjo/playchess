@@ -51,12 +51,17 @@ class ChessBoard:
         row: int = int(notation[1]) - 1
         return row * 8 + col
     
-    def get_legal_moves(self, color: PieceColor) -> list[int]:
+    def getLegalMoves(self, color: PieceColor, pieceType: list[PieceType] = [PieceType.PAWN,
+                                                                             PieceType.ROOK,
+                                                                             PieceType.KNIGHT,
+                                                                             PieceType.BISHOP,
+                                                                             PieceType.QUEEN,
+                                                                             PieceType.KING]) -> set[int]:
         toRet: list[int] = []
         for i in range(64):
-            if self.__board[i] is not None and self.__board[i]._color == color:
+            if self.__board[i] is not None and self.__board[i]._color == color and self.__board[i]._type in pieceType:
                 toRet.extend(self.__board[i].legal_moves())
-        return toRet
+        return set(toRet)
     
     def printAllMoves(self, color: PieceColor) -> None:
         for i in range(64):

@@ -20,9 +20,9 @@ class Game():
             
     def play(self) -> None:
         while True:
-            print(str(self._currentPlayer.getTeam()) + "'s turn")
             self._board.printBoard()
             # self._board.printAllMoves(self._currentPlayer.getTeam())
+            print(str(self._currentPlayer.getTeam()) + "'s turn")
             while True:
                 curMove = self._currentPlayer.getMove()
                 src: int = self._board.chessNotationToIdx(curMove[:2])

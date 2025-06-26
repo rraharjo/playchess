@@ -19,10 +19,10 @@ class PieceColor(Enum):
     
 class ChessPiece(ABC):
     def __init__(self, board: ChessBoard, type: PieceType, color: PieceColor, position: int):
-        self._board = board
-        self._type = type
-        self._color = color
-        self._position = position
+        self._board: ChessBoard = board
+        self._type: PieceType = type
+        self._color: PieceColor = color
+        self._position: int = position
     
     def move(self, dest: int) -> None:
         # if dest not in self.legal_moves():
@@ -51,8 +51,8 @@ class ChessPiece(ABC):
 class Pawn(ChessPiece): 
     def __init__(self, board: ChessBoard, color: PieceColor, position: int): 
         super().__init__(board, PieceType.PAWN, color, position)
-        self.enPassable = False
-        self.__hasMoved = False
+        self.enPassable: bool = False
+        self.__hasMoved: bool = False
     
     def move(self, dest: int) -> None:
         multiplier: int
@@ -162,6 +162,10 @@ class Rook(ChessPiece):
                     break
 
         return toRet
+
+    def move(self, dest):
+        self._hasMoved = True
+        return super().move(dest)
     def letter(self):
         if self._color == PieceColor.BLACK:
             return "r"
@@ -262,6 +266,28 @@ class Queen(ChessPiece):
 class King(ChessPiece):
     def __init__(self, board: ChessBoard, color: PieceColor, position: int):
         super().__init__(board, PieceType.KING, color, position)
+        self._hasMoved = False
+
+    def canCastle(self, short: bool) -> bool:
+        if self._hasMoved:
+            return False
+        multiplier: int = 1 if short else -1
+        if self._board[self._position + 1 * multiplier] is not None or self._board[self._position + 2 * multiplier] is not None:
+            return False
+        if not short and self._board[self._position + 3 * multiplier] is not None:
+            return False
+        maybeRook: Rook = self._board[self._position + 3 * multiplier] if short else self._board[self._position + 4 * multiplier]
+        if not isinstance(maybeRook, Rook) or maybeRook._hasMoved or maybeRook._color != self._color:
+            return False
+        opponentColor: PieceColor = PieceColor.BLACK if self._color == PieceColor.WHITE else PieceColor.WHITE
+        opponentMoves: set[int] = self._board.getLegalMoves(opponentColor, [PieceType.PAWN,
+                                                                             PieceType.ROOK,
+                                                                             PieceType.KNIGHT,
+                                                                             PieceType.BISHOP,
+                                                                             PieceType.QUEEN])
+        if self._position in opponentMoves or self._position + 1 * multiplier in opponentMoves or self._position + 2 * multiplier in opponentMoves:
+            return False
+        return True
 
     def legal_moves(self):
         toRet: list[int] = []
@@ -276,7 +302,20 @@ class King(ChessPiece):
             dest: int = self._position + 8 * dy + dx
             if self._canMove(dest):
                 toRet.append(dest)
+        if self.canCastle(True):
+            toRet.append(self._position + 2)
+        if self.canCastle(False):
+            toRet.append(self._position - 2)
         return toRet
+
+    def move(self, dest):
+        self._hasMoved = True
+        if dest == self._position + 2:
+            self._board[self._position + 3].move(self._position + 1)
+        if dest == self._position - 2:
+            self._board[self._position - 4].move(self._position - 1)
+        super().move(dest)
+
         
     def letter(self):
         if self._color == PieceColor.BLACK:

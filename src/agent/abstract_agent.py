@@ -3,7 +3,7 @@ from chess.pieces import PieceColor
 
 class Agent(ABC):
     def __init__(self, team: PieceColor):
-        self.__team = team
+        self.__team: PieceColor = team
     
     def getTeam(self) -> PieceColor:
         return self.__team

@@ -8,6 +8,8 @@ class PlayerAgent(Agent):
     def getMove(self) -> str:
         while True:
             userInput = input("Enter movement: ")
+            if userInput == "u":
+                return userInput
             if len(userInput) != 4:
                 print("Invalid input")
             elif not ("a" <= userInput[0] <= "h"):

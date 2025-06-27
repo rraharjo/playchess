@@ -5,8 +5,9 @@ from chess.movement import Move
 BOARD_W = 8
 class ChessBoard:
     def __init__(self):
-        self.enPassantStale: list[Pawn] = []
-        self.pawnPromotion:list[Pawn] = []
+        self.curNumOfMove: int = 0
+        self.whitePieces: list[ChessPiece] = []
+        self.blackPieces: list[ChessPiece] = []
         self.__board: list[Optional[ChessPiece]] = [None] * (BOARD_W * BOARD_W)
 
         # White back rank (row 0)
@@ -23,7 +24,7 @@ class ChessBoard:
         for i in range(8):
             self.__board[8 + i] = Pawn(self, PieceColor.WHITE, 8 + i)
 
-        # Black pawns (row 6)
+        # # Black pawns (row 6)
         for i in range(8):
             self.__board[48 + i] = Pawn(self, PieceColor.BLACK, 48 + i)
 
@@ -36,16 +37,34 @@ class ChessBoard:
         self.__board[61] = Bishop(self, PieceColor.BLACK, 61)
         self.__board[62] = Knight(self, PieceColor.BLACK, 62)
         self.__board[63] = Rook(self, PieceColor.BLACK, 63)
+        
+        for i in range(0, 16):
+            if self.__board[i] is not None:
+                self.whitePieces.append(self.__board[i])
+        for i in range(48, 64):
+            if self.__board[i] is not None:
+                self.blackPieces.append(self.__board[i])
     
     def move(self, move: Move) -> None:
+        self.curNumOfMove += 1
         move.piece = self.__board[move.src]
         moveType: MoveType = move.piece.move(move.dst)
-        if moveType == MoveType.REGULAR:
+        move.moveType = moveType
+        opponentPieces: list[ChessPiece] = self.blackPieces if move.color == PieceColor.WHITE else self.whitePieces
+        
+        # print(moveType)
+        if moveType == MoveType.REGULAR or moveType == MoveType.ROOKFIRSTMOVE or moveType == MoveType.KINGFIRSTMOVE:
             move.captured = self.__board[move.dst]
+        elif moveType == MoveType.PAWNFIRSTMOVE:
+            definitelyPawn: Pawn = move.piece
+            if definitelyPawn.enPassable:
+                definitelyPawn.enPassableAt = self.curNumOfMove + 1
         elif moveType == MoveType.PROMOTION:
             move.captured = self.__board[move.dst]
             self.__board[move.dst] = move.promotion
             self.__board[move.src] = None
+            if move.captured is not None:
+                opponentPieces.remove(move.captured)
             return
         elif moveType == MoveType.ENPASSANT:
             if move.piece._color == PieceColor.WHITE:
@@ -62,15 +81,65 @@ class ChessBoard:
             self.__board[move.src - 4].move(move.src - 1)
             self.__board[move.src - 1] = self.__board[move.src - 4]
             self.__board[move.src - 4] = None
+        
+        if move.captured is not None:
+            opponentPieces.remove(move.captured)
+
         self.__board[move.dst] = self.__board[move.src]
         self.__board[move.src] = None
         
-        for piece in self.__board:
-            if piece is not None and piece._type == PieceType.PAWN and piece._color != move.color:
+        for piece in opponentPieces:
+            if piece._type == PieceType.PAWN:
                 pawn: Pawn = piece
                 pawn.enPassable = False
+    
+    def unMove(self, move: Move) -> None:
+        if self.curNumOfMove == 0:
+            raise ValueError("No movements have been made")
+        opponentPieces: list[ChessPiece] = self.blackPieces if move.color == PieceColor.WHITE else self.whitePieces
+        playerPieces: list[ChessPiece] = self.blackPieces if move.color == PieceColor.BLACK else self.whitePieces
+        self.__board[move.dst].unMove(move.src)
+        if move.moveType == MoveType.CASTLESHORT:
+            definitelyRook: Rook = self.__board[move.dst - 1]
+            definitelyRook.unMove(definitelyRook._position + 2)
+            self.__board[definitelyRook._position] = definitelyRook
+            self.__board[move.dst - 1] = None
+        elif move.moveType == MoveType.CASTLELONG:
+            definitelyRook: Rook = self.__board[move.dst + 1]
+            definitelyRook.unMove(definitelyRook._position - 3)
+            self.__board[definitelyRook._position] = definitelyRook
+            self.__board[move.dst + 1] = None
+        elif move.moveType == MoveType.ENPASSANT:
+            self.__board[move.captured._position] = move.captured
+            self.printBoard()
+        
+            
+        self.__board[move.src] = self.__board[move.dst]
+        self.__board[move.dst] = None
+        if move.captured is not None:
+            self.__board[move.captured._position] = move.captured
+            if move.captured._color == PieceColor.WHITE:
+                self.whitePieces.append(move.captured)
+            else:
+                self.blackPieces.append(move.captured)
+                
+        for piece in opponentPieces:
+            if piece._type == PieceType.PAWN:
+                definitelyPawn: Pawn = piece
+                if definitelyPawn.enPassableAt == self.curNumOfMove:
+                    definitelyPawn.enPassable = True
+                # elif definitelyPawn.enPassable > self.curNumOfMove:
+                #     definitelyPawn.enPassableAt = -1
+        for piece in playerPieces:
+            if piece._type == PieceType.PAWN:
+                definitelyPawn: Pawn = piece
+                if definitelyPawn.enPassable == self.curNumOfMove:
+                    definitelyPawn.enPassableAt = -1
+        self.curNumOfMove -= 1
+        
         
     
+    # check if the color is in check
     def isCheck(self, color: PieceColor) -> bool:
         opponentColor: PieceColor = PieceColor.BLACK if color == PieceColor.WHITE else PieceColor.WHITE
         oppMoves: set[int] = self.getLegalMoves(opponentColor)
@@ -83,7 +152,8 @@ class ChessBoard:
             return True
         return False
     
-    def idxToChessNotation(self, idx: int) -> str:
+    @staticmethod
+    def idxToChessNotation(idx: int) -> str:
         if idx < 0 or idx >= 64:
             raise ValueError("Invalid Position")
         row: int = idx // 8
@@ -91,7 +161,8 @@ class ChessBoard:
         colLetter: str = chr(ord('a') + col)
         return f"{colLetter}{row + 1}"
         
-    def chessNotationToIdx(self, notation: str) -> int:
+    @staticmethod
+    def chessNotationToIdx(notation: str) -> int:
         if (len(notation) != 2 or notation[0] < 'a' or notation[0] > 'h' or notation[1] < '1' or notation[1] > '8'):
             raise ValueError("Invalid Position")
         col: int = ord(notation[0]) - ord('a')

@@ -13,9 +13,15 @@ class PieceType(Enum):
     QUEEN = 4
     KING = 5
     
+    def __str__(self) -> str:
+        return self.name
+    
 class PieceColor(Enum):
     WHITE = 0
     BLACK = 1
+    
+    def __str__(self) -> str:
+        return self.name
     
 class MoveType(Enum):
     REGULAR = 0
@@ -23,6 +29,9 @@ class MoveType(Enum):
     PROMOTION = 2
     CASTLESHORT = 3
     CASTLELONG = 4
+    PAWNFIRSTMOVE = 5
+    ROOKFIRSTMOVE = 6
+    KINGFIRSTMOVE = 7
     
 class ChessPiece(ABC):
     def __init__(self, board: ChessBoard, type: PieceType, color: PieceColor, position: int):
@@ -30,12 +39,18 @@ class ChessPiece(ABC):
         self._type: PieceType = type
         self._color: PieceColor = color
         self._position: int = position
+        self._numOfMove: int = 0
     
     def move(self, dest: int) -> MoveType:
         # self._board[self._position] = None
         # self._board[dest] = self
+        self._numOfMove += 1
         self._position = dest
         return MoveType.REGULAR
+    
+    def unMove(self, src: int) -> None:
+        self._numOfMove -= 1
+        self._position = src
     
     def _canMove(self, dest: int) -> bool:
         if dest >= 64:
@@ -45,7 +60,10 @@ class ChessPiece(ABC):
         if self._board[dest] is None or (isinstance(self._board[dest], ChessPiece) and self._board[dest]._color != self._color):
             return True
         return False
-        
+    
+    def __str__(self) -> str:
+        return f"{self._color.__str__()} {self._type.__str__()}"
+    
     @abstractmethod
     def legal_moves(self) -> list[int]:
         pass
@@ -58,10 +76,13 @@ class Pawn(ChessPiece):
     def __init__(self, board: ChessBoard, color: PieceColor, position: int): 
         super().__init__(board, PieceType.PAWN, color, position)
         self.enPassable: bool = False
-        self.__hasMoved: bool = False
+        self.enPassableAt: int = -1
     
     def move(self, dest: int) -> ChessPiece:
-        self.__hasMoved = True
+        self._numOfMove += 1
+        toRet: MoveType = MoveType.REGULAR
+        if self._numOfMove == 1:
+            toRet = MoveType.PAWNFIRSTMOVE
         multiplier: int
         if self._color == PieceColor.BLACK:
             multiplier = -8
@@ -76,24 +97,24 @@ class Pawn(ChessPiece):
         if abs(dest - self._position) == 8 + 1:
             maybePawn: Pawn = self._board[dest - multiplier]
             if isinstance(maybePawn, Pawn) and maybePawn._color != self._color and maybePawn.enPassable:
-                self._position = dest
-                return MoveType.ENPASSANT
+                toRet = MoveType.ENPASSANT
                 # self._board.enPassantStale.clear()
         
         # promotion
         if self._color == PieceColor.BLACK and 0 <= dest <= 7:
-            #self._board.pawnPromotion.append(self)
-            self._position = dest
-            return MoveType.PROMOTION
+            toRet = MoveType.PROMOTION
 
         if self._color == PieceColor.WHITE and 56 <= dest <= 63:
-            #self._board.pawnPromotion.append(self)
-            self._position = dest
-            return MoveType.PROMOTION
+            toRet = MoveType.PROMOTION
         
-        return super().move(dest)
+        self._position = dest
+        return toRet
         
-        
+    def unMove(self, src: int) -> None: 
+        super().unMove(src)
+        if self._numOfMove == 1 and 24 <= src < 40:
+            self.enPassable = True
+    
     def legal_moves(self) -> list[int]:
         toRet: list[int] = []
         multiplier: int
@@ -103,7 +124,7 @@ class Pawn(ChessPiece):
             multiplier = 8
         
         # First move - two steps ahead
-        if not self.__hasMoved and self._board[self._position + multiplier] == None and self._board[self._position + (2 * multiplier)] == None:
+        if self._numOfMove == 0 and self._board[self._position + multiplier] == None and self._board[self._position + (2 * multiplier)] == None:
             toRet.append(self._position + (2 * multiplier))
         
         # Regular move - one step ahead
@@ -151,7 +172,6 @@ class Pawn(ChessPiece):
 
 class Rook(ChessPiece):
     def __init__(self, board: ChessBoard, color: PieceColor, position: int):
-        self._hasMoved = False
         super().__init__(board, PieceType.ROOK, color, position)
 
     def legal_moves(self):
@@ -175,8 +195,13 @@ class Rook(ChessPiece):
         return toRet
 
     def move(self, dest):
-        self._hasMoved = True
-        return super().move(dest)
+        self._numOfMove += 1
+        toRet: MoveType = MoveType.REGULAR
+        if self._numOfMove == 1:
+            toRet = MoveType.ROOKFIRSTMOVE
+        self._position = dest
+        return toRet
+        
     def letter(self):
         if self._color == PieceColor.BLACK:
             return "r"
@@ -277,10 +302,9 @@ class Queen(ChessPiece):
 class King(ChessPiece):
     def __init__(self, board: ChessBoard, color: PieceColor, position: int):
         super().__init__(board, PieceType.KING, color, position)
-        self._hasMoved = False
 
     def canCastle(self, short: bool) -> bool:
-        if self._hasMoved:
+        if self._numOfMove != 0:
             return False
         multiplier: int = 1 if short else -1
         if self._board[self._position + 1 * multiplier] is not None or self._board[self._position + 2 * multiplier] is not None:
@@ -288,7 +312,7 @@ class King(ChessPiece):
         if not short and self._board[self._position + 3 * multiplier] is not None:
             return False
         maybeRook: Rook = self._board[self._position + 3 * multiplier] if short else self._board[self._position + 4 * multiplier]
-        if not isinstance(maybeRook, Rook) or maybeRook._hasMoved or maybeRook._color != self._color:
+        if not isinstance(maybeRook, Rook) or maybeRook._numOfMove != 0 or maybeRook._color != self._color:
             return False
         opponentColor: PieceColor = PieceColor.BLACK if self._color == PieceColor.WHITE else PieceColor.WHITE
         opponentMoves: set[int] = self._board.getLegalMoves(opponentColor, [PieceType.PAWN,
@@ -320,11 +344,16 @@ class King(ChessPiece):
         return toRet
 
     def move(self, dest):
-        self._hasMoved = True
-        if dest == self._position + 2 or dest == self._position - 2:
-            self._position = dest
-            return MoveType.CASTLE
-        return super().move(dest)
+        self._numOfMove += 1
+        toRet: MoveType = MoveType.REGULAR
+        if self._numOfMove == 1:
+            toRet = MoveType.KINGFIRSTMOVE
+        if dest == self._position + 2:
+            toRet = MoveType.CASTLESHORT
+        if dest == self._position - 2:
+            toRet = MoveType.CASTLELONG
+        self._position = dest
+        return toRet
 
         
     def letter(self):

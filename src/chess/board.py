@@ -1,5 +1,6 @@
 from typing import Optional
 from chess.pieces import *
+from chess.movement import Move
 
 BOARD_W = 8
 class ChessBoard:
@@ -35,6 +36,52 @@ class ChessBoard:
         self.__board[61] = Bishop(self, PieceColor.BLACK, 61)
         self.__board[62] = Knight(self, PieceColor.BLACK, 62)
         self.__board[63] = Rook(self, PieceColor.BLACK, 63)
+    
+    def move(self, move: Move) -> None:
+        move.piece = self.__board[move.src]
+        moveType: MoveType = move.piece.move(move.dst)
+        if moveType == MoveType.REGULAR:
+            move.captured = self.__board[move.dst]
+        elif moveType == MoveType.PROMOTION:
+            move.captured = self.__board[move.dst]
+            self.__board[move.dst] = move.promotion
+            self.__board[move.src] = None
+            return
+        elif moveType == MoveType.ENPASSANT:
+            if move.piece._color == PieceColor.WHITE:
+                move.captured = self.__board[move.dst - 8]
+                self.__board[move.dst - 8] = None
+            else:
+                move.captured = self.__board[move.dst + 8]
+                self.__board[move.dst + 8] = None
+        elif moveType == MoveType.CASTLESHORT:
+            self.__board[move.src + 3].move(move.src + 1)
+            self.__board[move.src + 1] = self.__board[move.src + 3]
+            self.__board[move.src + 3] = None
+        elif moveType == MoveType.CASTLELONG:
+            self.__board[move.src - 4].move(move.src - 1)
+            self.__board[move.src - 1] = self.__board[move.src - 4]
+            self.__board[move.src - 4] = None
+        self.__board[move.dst] = self.__board[move.src]
+        self.__board[move.src] = None
+        
+        for piece in self.__board:
+            if piece is not None and piece._type == PieceType.PAWN and piece._color != move.color:
+                pawn: Pawn = piece
+                pawn.enPassable = False
+        
+    
+    def isCheck(self, color: PieceColor) -> bool:
+        opponentColor: PieceColor = PieceColor.BLACK if color == PieceColor.WHITE else PieceColor.WHITE
+        oppMoves: set[int] = self.getLegalMoves(opponentColor)
+        kingPos: int
+        for i in range(64):
+            if isinstance(self.__board[i], King) and self.__board[i]._color == color:
+                kingPos = i
+                break
+        if kingPos in oppMoves:
+            return True
+        return False
     
     def idxToChessNotation(self, idx: int) -> str:
         if idx < 0 or idx >= 64:

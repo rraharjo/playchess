@@ -1,5 +1,6 @@
 from chess.board import ChessBoard
-from chess.pieces import PieceColor
+from chess.pieces import PieceColor, PieceType, Pawn
+from chess.movement import Move
 from agent.abstract_agent import Agent
 from agent.player_agent import PlayerAgent
 
@@ -23,24 +24,21 @@ class Game():
             self._board.printBoard()
             # self._board.printAllMoves(self._currentPlayer.getTeam())
             print(str(self._currentPlayer.getTeam()) + "'s turn")
+            curMove: Move
             while True:
-                curMove = self._currentPlayer.getMove()
-                src: int = self._board.chessNotationToIdx(curMove[:2])
-                dst: int = self._board.chessNotationToIdx(curMove[2:])
+                moveIn = self._currentPlayer.getMove()
+                src: int = self._board.chessNotationToIdx(moveIn[:2])
+                dst: int = self._board.chessNotationToIdx(moveIn[2:])
                 if self._board[src] is not None and self._board[src]._color == self._currentPlayer.getTeam() and dst in self._board[src].legal_moves():
-                    self._board[src].move(dst)
+                    curMove = Move(src, dst, self._currentPlayer.getTeam())
+                    if self._board[src]._type == PieceType.PAWN and (56 <= dst < 64 or 0 <= dst < 8):
+                        to:str = self._currentPlayer.getPawnPromotion()
+                        definitelyPawn: Pawn = self._board[src]
+                        curMove.promotion = definitelyPawn.promote(to)
+                    self._board.move(curMove)
                     break
                 else:
                     print("Invalid Move")
-            for pawn in self._board.enPassantStale:
-                if pawn._color != self._currentPlayer.getTeam():
-                    pawn.enPassable = False
-                    self._board.enPassantStale.remove(pawn)
-                    break
-            for pawn in self._board.pawnPromotion:
-                to:str = self._currentPlayer.getPawnPromotion()
-                self._board[pawn._position] = pawn.promote(to)
-            self._board.pawnPromotion.clear()
             self.__switchPlayer()
 
 

@@ -50,15 +50,6 @@ class ChessPiece(ABC):
         self._numOfMove -= 1
         self._position = src
     
-    def _canMove(self, dest: int) -> bool:
-        if dest >= 64:
-            return False
-        if dest < 0:
-            return False
-        if self._board[dest] is None or (isinstance(self._board[dest], ChessPiece) and self._board[dest]._color != self._color):
-            return True
-        return False
-    
     def __str__(self) -> str:
         return f"{self._color.__str__()} {self._type.__str__()}"
     
@@ -92,7 +83,7 @@ class Pawn(ChessPiece):
             self.enPassable = True
         
         # capture en passant
-        if abs(dest - self._position) == 8 + 1:
+        if abs(dest - self._position) == 9 or abs(dest - self._position) == 7:
             maybePawn: Pawn = self._board[dest - multiplier]
             if isinstance(maybePawn, Pawn) and maybePawn._color != self._color and maybePawn.enPassable:
                 toRet = MoveType.ENPASSANT
@@ -185,8 +176,11 @@ class Rook(ChessPiece):
                 if not (0 <= r < 8 and 0 <= c < 8):
                     break
                 dest = r * 8 + c
-                if self._canMove(dest):
+                if self._board[dest] is None :
                     toRet.append(dest)
+                elif self._board[dest]._color != self._color:
+                    toRet.append(dest)
+                    break
                 else:
                     break
 
@@ -210,6 +204,15 @@ class Rook(ChessPiece):
 class Knight(ChessPiece):
     def __init__(self, board: ChessBoard, color: PieceColor, position: int):
         super().__init__(board, PieceType.KNIGHT, color, position)
+    
+    def _canMove(self, dest: int) -> bool:
+        if dest >= 64:
+            return False
+        if dest < 0:
+            return False
+        if self._board[dest] is None or (isinstance(self._board[dest], ChessPiece) and self._board[dest]._color != self._color):
+            return True
+        return False
 
     def legal_moves(self):
         toRet: list[int] = []
@@ -254,8 +257,11 @@ class Bishop(ChessPiece):
                 if not (0 <= r < 8 and 0 <= c < 8):
                     break
                 dest = r * 8 + c
-                if self._canMove(dest):
+                if self._board[dest] is None :
                     toRet.append(dest)
+                elif self._board[dest]._color != self._color:
+                    toRet.append(dest)
+                    break
                 else:
                     break
 
@@ -284,8 +290,11 @@ class Queen(ChessPiece):
                 if not (0 <= r < 8 and 0 <= c < 8):
                     break
                 dest = r * 8 + c
-                if self._canMove(dest):
+                if self._board[dest] is None :
                     toRet.append(dest)
+                elif self._board[dest]._color != self._color:
+                    toRet.append(dest)
+                    break
                 else:
                     break
 
@@ -333,7 +342,9 @@ class King(ChessPiece):
             if not (0 <= r < 8 and 0 <= c < 8):
                 continue
             dest: int = self._position + 8 * dy + dx
-            if self._canMove(dest):
+            if self._board[dest] is None:
+                toRet.append(dest)
+            elif self._board[dest]._color != self._color:
                 toRet.append(dest)
         if self.canCastle(True):
             toRet.append(self._position + 2)

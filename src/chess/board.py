@@ -54,20 +54,13 @@ class ChessBoard:
         opponentPieces: list[ChessPiece] = self.blackPieces if move.color == PieceColor.WHITE else self.whitePieces
         
         # print(moveType)
-        if moveType == MoveType.REGULAR or moveType == MoveType.ROOKFIRSTMOVE or moveType == MoveType.KINGFIRSTMOVE:
+        if moveType == MoveType.REGULAR or moveType == MoveType.ROOKFIRSTMOVE or moveType == MoveType.KINGFIRSTMOVE or moveType == MoveType.PROMOTION:
             move.captured = self._board[move.dst]
         elif moveType == MoveType.PAWNFIRSTMOVE:
             move.captured = self._board[move.dst]
             definitelyPawn: Pawn = move.piece
             if definitelyPawn.enPassable:
                 definitelyPawn.enPassableAt = self.curNumOfMove + 1
-        elif moveType == MoveType.PROMOTION:
-            move.captured = self._board[move.dst]
-            self._board[move.dst] = move.promotion
-            self._board[move.src] = None
-            if move.captured is not None:
-                opponentPieces.remove(move.captured)
-            return
         elif moveType == MoveType.ENPASSANT:
             if move.piece._color == PieceColor.WHITE:
                 move.captured = self._board[move.dst - 8]
@@ -94,12 +87,23 @@ class ChessBoard:
             if piece._type == PieceType.PAWN:
                 pawn: Pawn = piece
                 pawn.enPassable = False
+            
+    def promote(self, move: Move) -> None:
+        curTeam: list[ChessPiece] = self.whitePieces if move.color == PieceColor.WHITE else self.blackPieces
+        curTeam.append(move.promotion)
+        curTeam.remove(move.piece)
+        self._board[move.piece._position] = move.promotion
     
     def unMove(self, move: Move) -> None:
         if self.curNumOfMove == 0:
             raise ValueError("No movements have been made")
         opponentPieces: list[ChessPiece] = self.blackPieces if move.color == PieceColor.WHITE else self.whitePieces
         playerPieces: list[ChessPiece] = self.blackPieces if move.color == PieceColor.BLACK else self.whitePieces
+        if move.moveType == MoveType.PROMOTION:
+            self._board[move.dst] = move.piece
+            if move.promotion is not None:
+                playerPieces.append(move.piece)
+                playerPieces.remove(move.promotion)
         self._board[move.dst].unMove(move.src)
         if move.moveType == MoveType.CASTLESHORT:
             definitelyRook: Rook = self._board[move.dst - 1]
@@ -110,7 +114,7 @@ class ChessBoard:
             definitelyRook: Rook = self._board[move.dst + 1]
             definitelyRook.unMove(definitelyRook._position - 3)
             self._board[definitelyRook._position] = definitelyRook
-            self._board[move.dst + 1] = None     
+            self._board[move.dst + 1] = None
             
         self._board[move.src] = self._board[move.dst]
         self._board[move.dst] = None

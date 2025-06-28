@@ -42,8 +42,6 @@ class ChessPiece(ABC):
         self._numOfMove: int = 0
     
     def move(self, dest: int) -> MoveType:
-        # self._board[self._position] = None
-        # self._board[dest] = self
         self._numOfMove += 1
         self._position = dest
         return MoveType.REGULAR
@@ -315,7 +313,7 @@ class King(ChessPiece):
         if not isinstance(maybeRook, Rook) or maybeRook._numOfMove != 0 or maybeRook._color != self._color:
             return False
         opponentColor: PieceColor = PieceColor.BLACK if self._color == PieceColor.WHITE else PieceColor.WHITE
-        opponentMoves: set[int] = self._board.getLegalMoves(opponentColor, [PieceType.PAWN,
+        opponentMoves: set[int] = self._board.getPiecesMoves(opponentColor, [PieceType.PAWN,
                                                                              PieceType.ROOK,
                                                                              PieceType.KNIGHT,
                                                                              PieceType.BISHOP,

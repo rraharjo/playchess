@@ -21,23 +21,9 @@ class Game():
         else:
             self._currentPlayer = self._player1
         
-    def __getLegalMoves(self, player: Agent) -> set[str]:
-        toRet: set[str] = set()
-        currentPieces: list[ChessPiece] = self._board.whitePieces if player.getTeam() == PieceColor.WHITE else self._board.blackPieces
-        for piece in currentPieces:
-            src: int = piece._position
-            pieceMoves: list[int] = piece.legal_moves()
-            for dst in pieceMoves:
-                curMove = Move(src, dst, piece._color)
-                self._board.move(curMove)
-                if not self._board.isCheck(piece._color):
-                    toRet.add(f"{self._board.idxToChessNotation(src)}{self._board.idxToChessNotation(dst)}")
-                self._board.unMove(curMove)
-        return toRet
-            
     def play(self) -> None:
         while True:
-            availableMoves: set[str] = self.__getLegalMoves(self._currentPlayer)
+            availableMoves: set[str] = self._board.getLegalMoves(self._currentPlayer.getTeam())
             if len(availableMoves) == 0:
                 opponent: Agent = self._player1 if self._currentPlayer == self._player2 else self._player2
                 if self._board.isCheck(self._currentPlayer.getTeam()):

@@ -56,6 +56,7 @@ class ChessBoard:
         if moveType == MoveType.REGULAR or moveType == MoveType.ROOKFIRSTMOVE or moveType == MoveType.KINGFIRSTMOVE:
             move.captured = self.__board[move.dst]
         elif moveType == MoveType.PAWNFIRSTMOVE:
+            move.captured = self.__board[move.dst]
             definitelyPawn: Pawn = move.piece
             if definitelyPawn.enPassable:
                 definitelyPawn.enPassableAt = self.curNumOfMove + 1
@@ -108,11 +109,7 @@ class ChessBoard:
             definitelyRook: Rook = self.__board[move.dst + 1]
             definitelyRook.unMove(definitelyRook._position - 3)
             self.__board[definitelyRook._position] = definitelyRook
-            self.__board[move.dst + 1] = None
-        elif move.moveType == MoveType.ENPASSANT:
-            self.__board[move.captured._position] = move.captured
-            self.printBoard()
-        
+            self.__board[move.dst + 1] = None     
             
         self.__board[move.src] = self.__board[move.dst]
         self.__board[move.dst] = None
@@ -128,8 +125,7 @@ class ChessBoard:
                 definitelyPawn: Pawn = piece
                 if definitelyPawn.enPassableAt == self.curNumOfMove:
                     definitelyPawn.enPassable = True
-                # elif definitelyPawn.enPassable > self.curNumOfMove:
-                #     definitelyPawn.enPassableAt = -1
+                
         for piece in playerPieces:
             if piece._type == PieceType.PAWN:
                 definitelyPawn: Pawn = piece
@@ -142,7 +138,7 @@ class ChessBoard:
     # check if the color is in check
     def isCheck(self, color: PieceColor) -> bool:
         opponentColor: PieceColor = PieceColor.BLACK if color == PieceColor.WHITE else PieceColor.WHITE
-        oppMoves: set[int] = self.getLegalMoves(opponentColor)
+        oppMoves: set[int] = self.getPiecesMoves(opponentColor)
         kingPos: int
         for i in range(64):
             if isinstance(self.__board[i], King) and self.__board[i]._color == color:
@@ -169,7 +165,21 @@ class ChessBoard:
         row: int = int(notation[1]) - 1
         return row * 8 + col
     
-    def getLegalMoves(self, color: PieceColor, pieceType: list[PieceType] = [PieceType.PAWN,
+    def getLegalMoves(self, color: PieceColor) -> set[str]:
+        toRet: set[str] = set()
+        currentPieces: list[ChessPiece] = self.whitePieces if color == PieceColor.WHITE else self.blackPieces
+        for piece in currentPieces:
+            src: int = piece._position
+            pieceMoves: list[int] = piece.legal_moves()
+            for dst in pieceMoves:
+                curMove = Move(src, dst, piece._color)
+                self.move(curMove)
+                if not self.isCheck(piece._color):
+                    toRet.add(f"{self.idxToChessNotation(src)}{self.idxToChessNotation(dst)}")
+                self.unMove(curMove)
+        return toRet
+    
+    def getPiecesMoves(self, color: PieceColor, pieceType: list[PieceType] = [PieceType.PAWN,
                                                                              PieceType.ROOK,
                                                                              PieceType.KNIGHT,
                                                                              PieceType.BISHOP,

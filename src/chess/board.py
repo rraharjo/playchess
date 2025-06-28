@@ -1,4 +1,5 @@
 from typing import Optional
+from copy import deepcopy
 from chess.pieces import *
 from chess.movement import Move
 
@@ -8,86 +9,86 @@ class ChessBoard:
         self.curNumOfMove: int = 0
         self.whitePieces: list[ChessPiece] = []
         self.blackPieces: list[ChessPiece] = []
-        self.__board: list[Optional[ChessPiece]] = [None] * (BOARD_W * BOARD_W)
+        self._board: list[Optional[ChessPiece]] = [None] * (BOARD_W * BOARD_W)
 
         # White back rank (row 0)
-        self.__board[0] = Rook(self, PieceColor.WHITE, 0)
-        self.__board[1] = Knight(self, PieceColor.WHITE, 1)
-        self.__board[2] = Bishop(self, PieceColor.WHITE, 2)
-        self.__board[3] = Queen(self, PieceColor.WHITE, 3)
-        self.__board[4] = King(self, PieceColor.WHITE, 4)
-        self.__board[5] = Bishop(self, PieceColor.WHITE, 5)
-        self.__board[6] = Knight(self, PieceColor.WHITE, 6)
-        self.__board[7] = Rook(self, PieceColor.WHITE, 7)
+        self._board[0] = Rook(self, PieceColor.WHITE, 0)
+        self._board[1] = Knight(self, PieceColor.WHITE, 1)
+        self._board[2] = Bishop(self, PieceColor.WHITE, 2)
+        self._board[3] = Queen(self, PieceColor.WHITE, 3)
+        self._board[4] = King(self, PieceColor.WHITE, 4)
+        self._board[5] = Bishop(self, PieceColor.WHITE, 5)
+        self._board[6] = Knight(self, PieceColor.WHITE, 6)
+        self._board[7] = Rook(self, PieceColor.WHITE, 7)
 
         # White pawns (row 1)
         for i in range(8):
-            self.__board[8 + i] = Pawn(self, PieceColor.WHITE, 8 + i)
+            self._board[8 + i] = Pawn(self, PieceColor.WHITE, 8 + i)
 
         # # Black pawns (row 6)
         for i in range(8):
-            self.__board[48 + i] = Pawn(self, PieceColor.BLACK, 48 + i)
+            self._board[48 + i] = Pawn(self, PieceColor.BLACK, 48 + i)
 
         # Black back rank (row 7)
-        self.__board[56] = Rook(self, PieceColor.BLACK, 56)
-        self.__board[57] = Knight(self, PieceColor.BLACK, 57)
-        self.__board[58] = Bishop(self, PieceColor.BLACK, 58)
-        self.__board[59] = Queen(self, PieceColor.BLACK, 59)
-        self.__board[60] = King(self, PieceColor.BLACK, 60)
-        self.__board[61] = Bishop(self, PieceColor.BLACK, 61)
-        self.__board[62] = Knight(self, PieceColor.BLACK, 62)
-        self.__board[63] = Rook(self, PieceColor.BLACK, 63)
+        self._board[56] = Rook(self, PieceColor.BLACK, 56)
+        self._board[57] = Knight(self, PieceColor.BLACK, 57)
+        self._board[58] = Bishop(self, PieceColor.BLACK, 58)
+        self._board[59] = Queen(self, PieceColor.BLACK, 59)
+        self._board[60] = King(self, PieceColor.BLACK, 60)
+        self._board[61] = Bishop(self, PieceColor.BLACK, 61)
+        self._board[62] = Knight(self, PieceColor.BLACK, 62)
+        self._board[63] = Rook(self, PieceColor.BLACK, 63)
         
         for i in range(0, 16):
-            if self.__board[i] is not None:
-                self.whitePieces.append(self.__board[i])
+            if self._board[i] is not None:
+                self.whitePieces.append(self._board[i])
         for i in range(48, 64):
-            if self.__board[i] is not None:
-                self.blackPieces.append(self.__board[i])
+            if self._board[i] is not None:
+                self.blackPieces.append(self._board[i])
     
     def move(self, move: Move) -> None:
         self.curNumOfMove += 1
-        move.piece = self.__board[move.src]
+        move.piece = self._board[move.src]
         moveType: MoveType = move.piece.move(move.dst)
         move.moveType = moveType
         opponentPieces: list[ChessPiece] = self.blackPieces if move.color == PieceColor.WHITE else self.whitePieces
         
         # print(moveType)
         if moveType == MoveType.REGULAR or moveType == MoveType.ROOKFIRSTMOVE or moveType == MoveType.KINGFIRSTMOVE:
-            move.captured = self.__board[move.dst]
+            move.captured = self._board[move.dst]
         elif moveType == MoveType.PAWNFIRSTMOVE:
-            move.captured = self.__board[move.dst]
+            move.captured = self._board[move.dst]
             definitelyPawn: Pawn = move.piece
             if definitelyPawn.enPassable:
                 definitelyPawn.enPassableAt = self.curNumOfMove + 1
         elif moveType == MoveType.PROMOTION:
-            move.captured = self.__board[move.dst]
-            self.__board[move.dst] = move.promotion
-            self.__board[move.src] = None
+            move.captured = self._board[move.dst]
+            self._board[move.dst] = move.promotion
+            self._board[move.src] = None
             if move.captured is not None:
                 opponentPieces.remove(move.captured)
             return
         elif moveType == MoveType.ENPASSANT:
             if move.piece._color == PieceColor.WHITE:
-                move.captured = self.__board[move.dst - 8]
-                self.__board[move.dst - 8] = None
+                move.captured = self._board[move.dst - 8]
+                self._board[move.dst - 8] = None
             else:
-                move.captured = self.__board[move.dst + 8]
-                self.__board[move.dst + 8] = None
+                move.captured = self._board[move.dst + 8]
+                self._board[move.dst + 8] = None
         elif moveType == MoveType.CASTLESHORT:
-            self.__board[move.src + 3].move(move.src + 1)
-            self.__board[move.src + 1] = self.__board[move.src + 3]
-            self.__board[move.src + 3] = None
+            self._board[move.src + 3].move(move.src + 1)
+            self._board[move.src + 1] = self._board[move.src + 3]
+            self._board[move.src + 3] = None
         elif moveType == MoveType.CASTLELONG:
-            self.__board[move.src - 4].move(move.src - 1)
-            self.__board[move.src - 1] = self.__board[move.src - 4]
-            self.__board[move.src - 4] = None
+            self._board[move.src - 4].move(move.src - 1)
+            self._board[move.src - 1] = self._board[move.src - 4]
+            self._board[move.src - 4] = None
         
         if move.captured is not None:
             opponentPieces.remove(move.captured)
 
-        self.__board[move.dst] = self.__board[move.src]
-        self.__board[move.src] = None
+        self._board[move.dst] = self._board[move.src]
+        self._board[move.src] = None
         
         for piece in opponentPieces:
             if piece._type == PieceType.PAWN:
@@ -99,22 +100,22 @@ class ChessBoard:
             raise ValueError("No movements have been made")
         opponentPieces: list[ChessPiece] = self.blackPieces if move.color == PieceColor.WHITE else self.whitePieces
         playerPieces: list[ChessPiece] = self.blackPieces if move.color == PieceColor.BLACK else self.whitePieces
-        self.__board[move.dst].unMove(move.src)
+        self._board[move.dst].unMove(move.src)
         if move.moveType == MoveType.CASTLESHORT:
-            definitelyRook: Rook = self.__board[move.dst - 1]
+            definitelyRook: Rook = self._board[move.dst - 1]
             definitelyRook.unMove(definitelyRook._position + 2)
-            self.__board[definitelyRook._position] = definitelyRook
-            self.__board[move.dst - 1] = None
+            self._board[definitelyRook._position] = definitelyRook
+            self._board[move.dst - 1] = None
         elif move.moveType == MoveType.CASTLELONG:
-            definitelyRook: Rook = self.__board[move.dst + 1]
+            definitelyRook: Rook = self._board[move.dst + 1]
             definitelyRook.unMove(definitelyRook._position - 3)
-            self.__board[definitelyRook._position] = definitelyRook
-            self.__board[move.dst + 1] = None     
+            self._board[definitelyRook._position] = definitelyRook
+            self._board[move.dst + 1] = None     
             
-        self.__board[move.src] = self.__board[move.dst]
-        self.__board[move.dst] = None
+        self._board[move.src] = self._board[move.dst]
+        self._board[move.dst] = None
         if move.captured is not None:
-            self.__board[move.captured._position] = move.captured
+            self._board[move.captured._position] = move.captured
             if move.captured._color == PieceColor.WHITE:
                 self.whitePieces.append(move.captured)
             else:
@@ -141,7 +142,7 @@ class ChessBoard:
         oppMoves: set[int] = self.getPiecesMoves(opponentColor)
         kingPos: int
         for i in range(64):
-            if isinstance(self.__board[i], King) and self.__board[i]._color == color:
+            if isinstance(self._board[i], King) and self._board[i]._color == color:
                 kingPos = i
                 break
         if kingPos in oppMoves:
@@ -187,15 +188,15 @@ class ChessBoard:
                                                                              PieceType.KING]) -> set[int]:
         toRet: list[int] = []
         for i in range(64):
-            if self.__board[i] is not None and self.__board[i]._color == color and self.__board[i]._type in pieceType:
-                toRet.extend(self.__board[i].legal_moves())
+            if self._board[i] is not None and self._board[i]._color == color and self._board[i]._type in pieceType:
+                toRet.extend(self._board[i].legal_moves())
         return set(toRet)
     
     def printAllMoves(self, color: PieceColor) -> None:
         for i in range(64):
-            if self.__board[i] is not None and self.__board[i]._color == color:
-                print(self.__board[i]._type)
-                for move in self.__board[i].legal_moves():
+            if self._board[i] is not None and self._board[i]._color == color:
+                print(self._board[i]._type)
+                for move in self._board[i].legal_moves():
                     print(self.idxToChessNotation(move))
                 print("")
 
@@ -212,21 +213,37 @@ class ChessBoard:
         print("       WHITE     ")
     
     def print_arr(self) -> None:
-        for i in range(len(self.__board)):
-            if isinstance(self.__board[i], ChessPiece):
-                print(self.__board[i].letter())
+        for i in range(len(self._board)):
+            if isinstance(self._board[i], ChessPiece):
+                print(self._board[i].letter())
             else:
                 print(".")
         
     def __getitem__(self, idx: int) -> Optional[ChessPiece]:
         if idx < 0 or idx >= BOARD_W ** 2:
             raise ValueError("Invalid position")
-        return self.__board[idx]
+        return self._board[idx]
     
     def __setitem__(self, idx: int, value: Optional[ChessPiece]) -> None:
         if idx < 0 or idx >= BOARD_W ** 2:
             raise ValueError("Invalid position")
-        self.__board[idx] = value
+        self._board[idx] = value
+        
+    def clone(self) -> "ChessBoard":
+        toRet: ChessBoard = ChessBoard.__new__(ChessBoard)
+        toRet.whitePieces = []
+        toRet.blackPieces = []
+        toRet.curNumOfMove = self.curNumOfMove
+        toRet._board = deepcopy(self._board)
+        for piece in toRet._board:
+            if piece is not None:
+                piece._board = toRet
+                if piece._color == PieceColor.WHITE:
+                    toRet.whitePieces.append(piece)
+                else:
+                    toRet.blackPieces.append(piece)
+        return toRet
+        
 
 if __name__ == "__main__":
     myBoard = ChessBoard()

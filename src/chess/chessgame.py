@@ -6,8 +6,8 @@ from agent.player_agent import PlayerAgent
 from collections import deque
 
 class Game():
-    def __init__(self, player1: Agent, player2: Agent):
-        self._board: ChessBoard = ChessBoard()
+    def __init__(self, board: ChessBoard, player1: Agent, player2: Agent):
+        self._board: ChessBoard = board
         self._player1: Agent = player1
         self._player2: Agent = player2
         if self._player1.getTeam() == self._player2.getTeam():
@@ -24,6 +24,7 @@ class Game():
     def play(self) -> None:
         while True:
             availableMoves: set[str] = self._board.getLegalMoves(self._currentPlayer.getTeam())
+            self._board.printBoard()
             if len(availableMoves) == 0:
                 opponent: Agent = self._player1 if self._currentPlayer == self._player2 else self._player2
                 if self._board.isCheck(self._currentPlayer.getTeam()):
@@ -31,7 +32,6 @@ class Game():
                 else:
                     print("Draw")
                 break
-            self._board.printBoard()
             print(str(self._currentPlayer.getTeam()) + "'s turn")
             
             while True:

@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
 from chess.pieces import PieceColor
+from chess.board import ChessBoard
 
 class Agent(ABC):
     def __init__(self, team: PieceColor):
-        self.__team: PieceColor = team
+        self._team: PieceColor = team
     
     def getTeam(self) -> PieceColor:
-        return self.__team
+        return self._team
     
     @abstractmethod
     def getMove(self) -> str:

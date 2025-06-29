@@ -235,9 +235,9 @@ class Knight(ChessPiece):
         return toRet
     def letter(self):
         if self._color == PieceColor.BLACK:
-            return "k"
+            return "n"
         else:
-            return "K"
+            return "N"
 
 
 class Bishop(ChessPiece):

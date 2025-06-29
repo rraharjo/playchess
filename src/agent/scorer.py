@@ -30,3 +30,23 @@ class SimpleScorer(BoardScorer):
                     score = -score
                 toRet += score
         return toRet
+
+class PruningScorer(BoardScorer):
+    scores: dict[PieceType, int] = {PieceType.KING: 0, 
+                                    PieceType.PAWN: 1, 
+                                    PieceType.KNIGHT: 3, 
+                                    PieceType.BISHOP: 3, 
+                                    PieceType.ROOK: 5, 
+                                    PieceType.QUEEN: 9}
+    def __init__(self):
+        super().__init__()
+    
+    def score(self, board: ChessBoard, _: PieceColor) -> int:
+        toRet: int = 0
+        for piece in board._board:
+            if piece is not None:
+                if piece._color == PieceColor.WHITE:
+                    toRet += PruningScorer.scores[piece._type]
+                else:
+                    toRet -= PruningScorer.scores[piece._type]
+        return toRet

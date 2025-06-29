@@ -2,6 +2,7 @@ from typing import Optional
 from copy import deepcopy
 from chess.pieces import *
 from chess.movement import Move
+from chess.utils import idxToChessNotation
 
 BOARD_W = 8
 class ChessBoard:
@@ -53,7 +54,6 @@ class ChessBoard:
         move.moveType = moveType
         opponentPieces: list[ChessPiece] = self.blackPieces if move.color == PieceColor.WHITE else self.whitePieces
         
-        # print(moveType)
         if moveType == MoveType.REGULAR or moveType == MoveType.ROOKFIRSTMOVE or moveType == MoveType.KINGFIRSTMOVE or moveType == MoveType.PROMOTION:
             move.captured = self._board[move.dst]
         elif moveType == MoveType.PAWNFIRSTMOVE:
@@ -153,23 +153,6 @@ class ChessBoard:
             return True
         return False
     
-    @staticmethod
-    def idxToChessNotation(idx: int) -> str:
-        if idx < 0 or idx >= 64:
-            raise ValueError("Invalid Position")
-        row: int = idx // 8
-        col: int = idx % 8
-        colLetter: str = chr(ord('a') + col)
-        return f"{colLetter}{row + 1}"
-        
-    @staticmethod
-    def chessNotationToIdx(notation: str) -> int:
-        if (len(notation) != 2 or notation[0] < 'a' or notation[0] > 'h' or notation[1] < '1' or notation[1] > '8'):
-            raise ValueError("Invalid Position")
-        col: int = ord(notation[0]) - ord('a')
-        row: int = int(notation[1]) - 1
-        return row * 8 + col
-    
     def getLegalMoves(self, color: PieceColor) -> set[str]:
         toRet: set[str] = set()
         currentPieces: list[ChessPiece] = self.whitePieces if color == PieceColor.WHITE else self.blackPieces
@@ -180,7 +163,7 @@ class ChessBoard:
                 curMove = Move(src, dst, piece._color)
                 self.move(curMove)
                 if not self.isCheck(piece._color):
-                    toRet.add(f"{self.idxToChessNotation(src)}{self.idxToChessNotation(dst)}")
+                    toRet.add(f"{idxToChessNotation(src)}{idxToChessNotation(dst)}")
                 self.unMove(curMove)
         return toRet
     
@@ -201,7 +184,7 @@ class ChessBoard:
             if self._board[i] is not None and self._board[i]._color == color:
                 print(self._board[i]._type)
                 for move in self._board[i].legal_moves():
-                    print(self.idxToChessNotation(move))
+                    print(idxToChessNotation(move))
                 print("")
 
     def printBoard(self) -> None:

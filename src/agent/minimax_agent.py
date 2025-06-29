@@ -2,6 +2,7 @@ from agent.abstract_agent import Agent
 from agent.scorer import BoardScorer, PruningScorer, SimpleScorer
 from chess.pieces import PieceColor
 from chess.board import ChessBoard
+from chess.utils import chessNotationToIdx
 from chess.movement import Move
 import sys
 
@@ -28,8 +29,8 @@ class MinimaxAgent(Agent):
         toRet: tuple[str, int]
         minVal: int = sys.maxsize
         for move in myMove:
-            src: int = ChessBoard.chessNotationToIdx(move[:2])
-            dst: int = ChessBoard.chessNotationToIdx(move[2:])
+            src: int = chessNotationToIdx(move[:2])
+            dst: int = chessNotationToIdx(move[2:])
             curMove: Move = Move(src, dst, currentTeam)
             board.move(curMove)
             oppMax: int = self.minimax(board, depth - 1, opponentColor)[1]
@@ -64,8 +65,8 @@ class PruningAgent(Agent):
         toRet: tuple[str, int]
         curScore: int = None
         for move in myMove:
-            src: int = ChessBoard.chessNotationToIdx(move[:2])
-            dst: int = ChessBoard.chessNotationToIdx(move[2:])
+            src: int = chessNotationToIdx(move[:2])
+            dst: int = chessNotationToIdx(move[2:])
             curMove: Move = Move(src, dst, currentTeam)
             board.move(curMove)
             childScore: int = self.pruning(board, depth - 1, opponentColor, alpha, beta)[1]

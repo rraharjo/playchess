@@ -1,6 +1,7 @@
 from chess.board import ChessBoard
 from chess.pieces import PieceColor, PieceType, ChessPiece, Pawn
 from chess.movement import Move, MoveType
+from chess.utils import chessNotationToIdx
 from agent.abstract_agent import Agent
 from agent.player_agent import PlayerAgent
 from collections import deque
@@ -37,8 +38,8 @@ class Game():
             while True:
                 moveIn: str = self._currentPlayer.getMove()
                 if moveIn in availableMoves:
-                    src: int = self._board.chessNotationToIdx(moveIn[:2])
-                    dst: int = self._board.chessNotationToIdx(moveIn[2:])
+                    src: int = chessNotationToIdx(moveIn[:2])
+                    dst: int = chessNotationToIdx(moveIn[2:])
                     curMove = Move(src, dst, self._currentPlayer.getTeam())
                     self._board.move(curMove)
                     if curMove.moveType == MoveType.PROMOTION:
@@ -47,7 +48,7 @@ class Game():
                         curMove.promotion = definitelyPawn.promote(to)
                         self._board.promote(curMove)
                     self._moveHistory.append(curMove)
-                    print(curMove.moveType)
+                    print(curMove)
                     break
                 else:
                     print("Invalid Move")
